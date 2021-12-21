@@ -1,0 +1,5 @@
+/target
+flamegraph.svg
+Cargo.lock
+perf.data*
+stacks.folded
