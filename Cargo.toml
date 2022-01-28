@@ -1,7 +1,7 @@
 [package]
 name = "pci_id"
 version = "0.1.0"
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -14,5 +14,13 @@ criterion = "0.3.5"
 name = "bench"
 harness = false
 
+# Incremental builds for faster build speeds once everything is compiled at least once
 [profile.bench]
 debug = true
+
+# Optimized for speed and size
+[profile.release]
+incremental = false
+lto = "thin"
+codegen-units = 1
+panic = "abort"

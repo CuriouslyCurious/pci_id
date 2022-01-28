@@ -1,4 +1,4 @@
-use std::{path::Path, io::Error};
+use std::{io::Error, path::Path};
 
 pub const DEFAULT_PATH_TO_PCI_IDS: &str = "/usr/share/hwdata/pci.ids";
 
@@ -11,7 +11,11 @@ pub struct Vendor {
 
 impl Vendor {
     fn new(id: u16, name: String) -> Self {
-        Self { id, name, devices: Vec::new() }
+        Self {
+            id,
+            name,
+            devices: Vec::new(),
+        }
     }
 
     fn set_devices(&mut self, devices: Vec<Device>) {
@@ -151,9 +155,8 @@ where
         // Line starts with a digit
         if char.is_digit(16) && char != 'C' && !in_class_section {
             let id = u16::from_str_radix(id.trim(), 16).unwrap();
-            match vendor_list.last_mut() {
-                Some(v) => v.set_devices(devices),
-                None => (),
+            if let Some(v) = vendor_list.last_mut() {
+                v.set_devices(devices);
             }
             vendor = Vendor::new(id, name.to_owned());
             vendor_list.push(vendor);
@@ -162,9 +165,8 @@ where
             // One tab
             if chars.next().unwrap() != '\t' {
                 let id = u16::from_str_radix(id.trim(), 16).unwrap();
-                match devices.last_mut() {
-                    Some(d) => d.set_subdevices(subdevices),
-                    None => (),
+                if let Some(d) = devices.last_mut() {
+                    d.set_subdevices(subdevices);
                 }
                 device = Device::new(id, name.to_owned());
                 devices.push(device);
@@ -186,9 +188,8 @@ where
 
             let (_, id) = id.split_once(" ").unwrap();
             let id = u8::from_str_radix(id.trim(), 16).unwrap();
-            match class_list.last_mut() {
-                Some(c) => c.set_subclasses(subclasses),
-                None => (),
+            if let Some(c) = class_list.last_mut() {
+                c.set_subclasses(subclasses);
             }
             class = DeviceClass::new(id, name.to_owned());
             class_list.push(class);
@@ -199,9 +200,8 @@ where
             let id = u8::from_str_radix(id.trim(), 16).unwrap();
             // One tab
             if chars.next().unwrap() != '\t' {
-                match subclasses.last_mut() {
-                    Some(s) => s.set_interfaces(interfaces),
-                    None => (),
+                if let Some(s) = subclasses.last_mut() {
+                    s.set_interfaces(interfaces);
                 }
                 subclass = SubDeviceClass::new(id, name.to_owned());
                 subclasses.push(subclass);
@@ -215,21 +215,17 @@ where
         }
     }
     // Add in the last ones
-    match devices.last_mut() {
-        Some(d) => d.set_subdevices(subdevices),
-        None => (),
+    if let Some(d) = devices.last_mut() {
+        d.set_subdevices(subdevices);
     };
-    match vendor_list.last_mut() {
-        Some(v) => v.set_devices(devices),
-        None => (),
+    if let Some(v) = vendor_list.last_mut() {
+        v.set_devices(devices);
     };
-    match subclasses.last_mut() {
-        Some(s) => s.set_interfaces(interfaces),
-        None => (),
+    if let Some(s) = subclasses.last_mut() {
+        s.set_interfaces(interfaces);
     };
-    match class_list.last_mut() {
-        Some(c) => c.set_subclasses(subclasses),
-        None => (),
+    if let Some(c) = class_list.last_mut() {
+        c.set_subclasses(subclasses);
     };
 
     Ok((vendor_list, class_list))
@@ -240,21 +236,25 @@ mod tests {
     #[test]
     fn test_vendors_list() {
         let (vendors, _) = crate::parse_pci_id_list(crate::DEFAULT_PATH_TO_PCI_IDS).unwrap();
-        let res =  vendors
-            .iter()
-            .find(|&v| v.id == 0x0e11
+        let res = vendors.iter().find(|&v| {
+            v.id == 0x0e11
                 && v.name == "Compaq Computer Corporation"
                 && v.devices
-                   .iter()
-                   .find(|&d| d.id == 0x0046
-                        && d.name == "Smart Array 64xx"
-                        && d.subdevices
-                            .iter()
-                            .find(|&s| s.subvendor_id == 0x0e11
-                                && s.subdevice_id == 0x409d
-                                && s.name == "Smart Array 6400 EM")
-                            .is_some())
-                    .is_some());
+                    .iter()
+                    .find(|&d| {
+                        d.id == 0x0046
+                            && d.name == "Smart Array 64xx"
+                            && d.subdevices
+                                .iter()
+                                .find(|&s| {
+                                    s.subvendor_id == 0x0e11
+                                        && s.subdevice_id == 0x409d
+                                        && s.name == "Smart Array 6400 EM"
+                                })
+                                .is_some()
+                    })
+                    .is_some()
+        });
         assert!(!res.is_some());
     }
 
@@ -262,7 +262,21 @@ mod tests {
     #[test]
     fn test_classes_list() {
         let (_, classes) = crate::parse_pci_id_list(crate::DEFAULT_PATH_TO_PCI_IDS).unwrap();
-        let res = classes.iter().find(|&c| c.id == 0x0c && c.name == "Serial bus controller" && c.subclasses.iter().find(|&s| s.id == 0x03 && s.name == "USB controller" && s.interfaces.iter().find(|&i| i.id == 0xfe && i.name == "USB Device").is_some()).is_some());
+        let res = classes.iter().find(|&c| {
+            c.id == 0x0c
+                && c.name == "Serial bus controller"
+                && c.subclasses
+                    .iter()
+                    .find(|&s| {
+                        s.id == 0x03
+                            && s.name == "USB controller"
+                            && s.interfaces
+                                .iter()
+                                .find(|&i| i.id == 0xfe && i.name == "USB Device")
+                                .is_some()
+                    })
+                    .is_some()
+        });
         assert!(res.is_some());
     }
 }
