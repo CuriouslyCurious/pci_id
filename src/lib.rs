@@ -1,25 +1,17 @@
-use std::path::Path;
-use std::collections::HashSet;
+use std::{path::Path, io::Error};
 
-pub const PATH_TO_PCI_IDS: &str = "/usr/share/hwdata/pci.ids";
-
-pub trait PCIEntry {}
-
+pub const DEFAULT_PATH_TO_PCI_IDS: &str = "/usr/share/hwdata/pci.ids";
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Vendor {
-    id: u16,
-    name: String,
-    devices: Vec<Device>,
+    pub id: u16,
+    pub name: String,
+    pub devices: Vec<Device>,
 }
 
 impl Vendor {
     fn new(id: u16, name: String) -> Self {
-        Self {
-            id,
-            name,
-            devices: Vec::new(),
-        }
+        Self { id, name, devices: Vec::new() }
     }
 
     fn set_devices(&mut self, devices: Vec<Device>) {
@@ -27,12 +19,11 @@ impl Vendor {
     }
 }
 
-
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Device {
-    id: u16,
-    name: String,
-    subdevices: Vec<SubDevice>,
+    pub id: u16,
+    pub name: String,
+    pub subdevices: Vec<SubDevice>,
 }
 
 impl Device {
@@ -51,16 +42,16 @@ impl Device {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct SubDevice {
-    subvendor: u16,
-    id: u16,
-    name: String,
+    pub subvendor_id: u16,
+    pub subdevice_id: u16,
+    pub name: String,
 }
 
 impl SubDevice {
-    fn new(subvendor: u16, id: u16, name: String) -> Self {
+    fn new(subvendor_id: u16, subdevice_id: u16, name: String) -> Self {
         Self {
-            subvendor,
-            id,
+            subvendor_id,
+            subdevice_id,
             name,
         }
     }
@@ -68,9 +59,9 @@ impl SubDevice {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct DeviceClass {
-    id: u8,
-    name: String,
-    subclasses: Vec<SubDeviceClass>,
+    pub id: u8,
+    pub name: String,
+    pub subclasses: Vec<SubDeviceClass>,
 }
 
 impl DeviceClass {
@@ -89,9 +80,9 @@ impl DeviceClass {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct SubDeviceClass {
-    id: u8,
-    name: String,
-    interfaces: Vec<ProgrammingInterface>,
+    pub id: u8,
+    pub name: String,
+    pub interfaces: Vec<ProgrammingInterface>,
 }
 
 impl SubDeviceClass {
@@ -110,191 +101,168 @@ impl SubDeviceClass {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct ProgrammingInterface {
-    interface: u8,
-    name: String,
+    pub id: u8,
+    pub name: String,
 }
 
 impl ProgrammingInterface {
-    fn new(interface: u8, name: String) -> Self {
-        Self {
-            interface,
-            name,
-        }
+    fn new(id: u8, name: String) -> Self {
+        Self { id, name }
     }
 }
 
-pub fn parse_pci_id_list<P>(path: P) -> (Vec<Vendor>, Vec<DeviceClass>) where P: AsRef<Path> {
-    let mut vendor_list = Vec::new();
-    let mut class_list = Vec::new();
-    let data = std::fs::read_to_string(path).unwrap();
+pub fn parse_pci_id_list<P>(path: P) -> Result<(Vec<Vendor>, Vec<DeviceClass>), Error>
+where
+    P: AsRef<Path>,
+{
+    let mut vendor_list: Vec<Vendor> = Vec::new();
+    let mut class_list: Vec<DeviceClass> = Vec::new();
+    //let mut pci_class_list = Vec::with_capacity(50000);
+    let data = std::fs::read_to_string(path)?;
 
     let mut in_class_section = false;
     let mut vendor: Vendor;
     let mut device: Device;
     let mut class: DeviceClass;
     let mut subclass: SubDeviceClass;
+
     let mut devices = Vec::new();
     let mut subdevices = Vec::new();
     let mut subclasses = Vec::new();
     let mut interfaces = Vec::new();
 
+    // TODO: Need to set the list of things from the last go when a new owner is made
     for line in data.lines() {
-        if line.starts_with("#") || line.is_empty() {
+        // Skip comments and empty lines
+        if line.starts_with('#') || line.is_empty() {
             continue;
         }
 
-        if line.starts_with("C") || in_class_section {
-            in_class_section = true;
-            let mut s = line.split("  ");
-            let id = s.next().unwrap();
-            let name = s.next().unwrap();
-
-            if !id.starts_with("\t") {
-                let (_, id) = id.split_once(" ").unwrap();
-                let id = u8::from_str_radix(id, 16).unwrap();
-                class = DeviceClass::new(id, name.to_owned());
-                class.set_subclasses(subclasses);
-                class_list.push(class);
-                subclasses = Vec::new();
-            } else {
-                if id.starts_with("\t\t") {
-                    let id = u8::from_str_radix(id.trim(), 16).unwrap();
-                    let interface = ProgrammingInterface::new(id, name.to_owned());
-                    interfaces.push(interface);
-                } else if id.starts_with("\t") {
-                    let id = id.trim();
-                    let id = u8::from_str_radix(id, 16).unwrap();
-                    subclass = SubDeviceClass::new(id, name.to_owned());
-                    subclass.set_interfaces(interfaces);
-                    subclasses.push(subclass);
-                    interfaces = Vec::new();
-                }
-            }
-
-        } else {
-            let mut s = line.split("  ");
-            let id = s.next().unwrap();
-            let name = s.next().unwrap();
-
-            if !id.starts_with("\t") {
-                let id = u16::from_str_radix(id, 16).unwrap();
-                vendor = Vendor::new(id, name.to_owned());
-                vendor.set_devices(devices);
-                vendor_list.push(vendor);
-                devices = Vec::new();
-            } else {
-                if id.starts_with("\t\t") {
-                    let (id, subvendor_id) = id.split_once(" ").unwrap();
-                    let subvendor_id = u16::from_str_radix(subvendor_id.trim(), 16).unwrap();
-                    let id = u16::from_str_radix(id.trim(), 16).unwrap();
-                    let subdevice = SubDevice::new(subvendor_id, id, name.to_owned());
-                    subdevices.push(subdevice);
-                } else if id.starts_with("\t") {
-                    let id = id.trim();
-                    let id = u16::from_str_radix(id, 16).unwrap();
-                    device = Device::new(id, name.to_owned());
-                    device.set_subdevices(subdevices);
-                    devices.push(device);
-                    subdevices = Vec::new();
-                }
-            }
+        // Should be safe since we check if the line is empty
+        let mut chars = line.chars();
+        let char;
+        unsafe {
+            char = chars.next().unwrap_unchecked();
         }
 
+        let (id, name) = line.split_once("  ").unwrap();
+        let name = name.trim();
+
+        // Line starts with a digit
+        if char.is_digit(16) && char != 'C' && !in_class_section {
+            let id = u16::from_str_radix(id.trim(), 16).unwrap();
+            match vendor_list.last_mut() {
+                Some(v) => v.set_devices(devices),
+                None => (),
+            }
+            vendor = Vendor::new(id, name.to_owned());
+            vendor_list.push(vendor);
+            devices = Vec::new();
+        } else if char == '\t' && !in_class_section {
+            // One tab
+            if chars.next().unwrap() != '\t' {
+                let id = u16::from_str_radix(id.trim(), 16).unwrap();
+                match devices.last_mut() {
+                    Some(d) => d.set_subdevices(subdevices),
+                    None => (),
+                }
+                device = Device::new(id, name.to_owned());
+                devices.push(device);
+                subdevices = Vec::new();
+            // Two tabs
+            } else {
+                let (subvendor_id, subdevice_id) = id.split_once(" ").unwrap();
+                let subvendor_id = u16::from_str_radix(subvendor_id.trim(), 16).unwrap();
+                let subdevice_id = u16::from_str_radix(subdevice_id.trim(), 16).unwrap();
+                let subdevice = SubDevice::new(subvendor_id, subdevice_id, name.to_owned());
+                subdevices.push(subdevice);
+            }
+
+        // Line starts with a C or we have entered the device class section at the bottom of the file
+        } else if char == 'C' {
+            if !in_class_section {
+                in_class_section = true;
+            }
+
+            let (_, id) = id.split_once(" ").unwrap();
+            let id = u8::from_str_radix(id.trim(), 16).unwrap();
+            match class_list.last_mut() {
+                Some(c) => c.set_subclasses(subclasses),
+                None => (),
+            }
+            class = DeviceClass::new(id, name.to_owned());
+            class_list.push(class);
+            subclasses = Vec::new();
+
+        // At this point every line should start with a tab, so no need to check for that
+        } else if in_class_section {
+            let id = u8::from_str_radix(id.trim(), 16).unwrap();
+            // One tab
+            if chars.next().unwrap() != '\t' {
+                match subclasses.last_mut() {
+                    Some(s) => s.set_interfaces(interfaces),
+                    None => (),
+                }
+                subclass = SubDeviceClass::new(id, name.to_owned());
+                subclasses.push(subclass);
+                interfaces = Vec::new();
+            }
+            // Two tabs
+            else {
+                let interface = ProgrammingInterface::new(id, name.to_owned());
+                interfaces.push(interface);
+            }
+        }
     }
-    (vendor_list, class_list)
-}
+    // Add in the last ones
+    match devices.last_mut() {
+        Some(d) => d.set_subdevices(subdevices),
+        None => (),
+    };
+    match vendor_list.last_mut() {
+        Some(v) => v.set_devices(devices),
+        None => (),
+    };
+    match subclasses.last_mut() {
+        Some(s) => s.set_interfaces(interfaces),
+        None => (),
+    };
+    match class_list.last_mut() {
+        Some(c) => c.set_subclasses(subclasses),
+        None => (),
+    };
 
-pub fn parse_pci_id_hash<P>(path: P) -> (HashSet<Vendor>, HashSet<DeviceClass>) where P: AsRef<Path> {
-    let mut vendor_set = HashSet::new();
-    let mut class_set = HashSet::new();
-    let data = std::fs::read_to_string(path).unwrap();
-
-    let mut in_class_section = false;
-    let mut vendor: Vendor;
-    let mut device: Device;
-    let mut class: DeviceClass;
-    let mut subclass: SubDeviceClass;
-    let mut devices = Vec::new();
-    let mut subdevices = Vec::new();
-    let mut subclasses = Vec::new();
-    let mut interfaces = Vec::new();
-
-    for line in data.lines() {
-        if line.starts_with("#") || line.is_empty() {
-            continue;
-        }
-
-        if line.starts_with("C") || in_class_section {
-            in_class_section = true;
-            let mut s = line.split("  ");
-            let id = s.next().unwrap();
-            let name = s.next().unwrap();
-
-            if !id.starts_with("\t") {
-                let (_, id) = id.split_once(" ").unwrap();
-                let id = u8::from_str_radix(id, 16).unwrap();
-                class = DeviceClass::new(id, name.to_owned());
-                class.set_subclasses(subclasses);
-                class_set.insert(class);
-                subclasses = Vec::new();
-            } else {
-                if id.starts_with("\t\t") {
-                    let id = u8::from_str_radix(id.trim(), 16).unwrap();
-                    let interface = ProgrammingInterface::new(id, name.to_owned());
-                    interfaces.push(interface);
-                } else if id.starts_with("\t") {
-                    let id = id.trim();
-                    let id = u8::from_str_radix(id, 16).unwrap();
-                    subclass = SubDeviceClass::new(id, name.to_owned());
-                    subclass.set_interfaces(interfaces);
-                    subclasses.push(subclass);
-                    interfaces = Vec::new();
-                }
-            }
-
-        } else {
-            let mut s = line.split("  ");
-            let id = s.next().unwrap();
-            let name = s.next().unwrap();
-
-            if !id.starts_with("\t") {
-                let id = u16::from_str_radix(id, 16).unwrap();
-                vendor = Vendor::new(id, name.to_owned());
-                vendor.set_devices(devices);
-                vendor_set.insert(vendor);
-                devices = Vec::new();
-            } else {
-                if id.starts_with("\t\t") {
-                    let (id, subvendor_id) = id.split_once(" ").unwrap();
-                    let subvendor_id = u16::from_str_radix(subvendor_id.trim(), 16).unwrap();
-                    let id = u16::from_str_radix(id.trim(), 16).unwrap();
-                    let subdevice = SubDevice::new(subvendor_id, id, name.to_owned());
-                    subdevices.push(subdevice);
-                } else if id.starts_with("\t") {
-                    let id = id.trim();
-                    let id = u16::from_str_radix(id, 16).unwrap();
-                    device = Device::new(id, name.to_owned());
-                    device.set_subdevices(subdevices);
-                    devices.push(device);
-                    subdevices = Vec::new();
-                }
-            }
-        }
-
-    }
-    (vendor_set, class_set)
+    Ok((vendor_list, class_list))
 }
 
 mod tests {
-    use crate::*;
-
+    /// Test the vendors part of the parsed result by picking an example and checking if it is ok
     #[test]
-    fn test_parse_list() {
-        parse_pci_id_list(PATH_TO_PCI_IDS);
+    fn test_vendors_list() {
+        let (vendors, _) = crate::parse_pci_id_list(crate::DEFAULT_PATH_TO_PCI_IDS).unwrap();
+        let res =  vendors
+            .iter()
+            .find(|&v| v.id == 0x0e11
+                && v.name == "Compaq Computer Corporation"
+                && v.devices
+                   .iter()
+                   .find(|&d| d.id == 0x0046
+                        && d.name == "Smart Array 64xx"
+                        && d.subdevices
+                            .iter()
+                            .find(|&s| s.subvendor_id == 0x0e11
+                                && s.subdevice_id == 0x409d
+                                && s.name == "Smart Array 6400 EM")
+                            .is_some())
+                    .is_some());
+        assert!(!res.is_some());
     }
 
+    /// Test the classes part of the parsed result by picking an example and checking if it is ok
     #[test]
-    fn test_parse_hash() {
-        parse_pci_id_hash(PATH_TO_PCI_IDS);
+    fn test_classes_list() {
+        let (_, classes) = crate::parse_pci_id_list(crate::DEFAULT_PATH_TO_PCI_IDS).unwrap();
+        let res = classes.iter().find(|&c| c.id == 0x0c && c.name == "Serial bus controller" && c.subclasses.iter().find(|&s| s.id == 0x03 && s.name == "USB controller" && s.interfaces.iter().find(|&i| i.id == 0xfe && i.name == "USB Device").is_some()).is_some());
+        assert!(res.is_some());
     }
 }
