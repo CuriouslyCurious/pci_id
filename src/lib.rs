@@ -1,12 +1,16 @@
 use std::num::ParseIntError;
 use std::{io, path::Path};
 
+use crate::device_class::DeviceClass;
+
 pub const DEFAULT_PATH_TO_PCI_IDS: &str = "/usr/share/hwdata/pci.ids";
+
+mod device_class;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct PciIds {
     vendors: Vec<Vendor>,
-    classes: Vec<DeviceClass>,
+    classes: Vec<Class>,
 }
 
 impl PciIds {
@@ -21,7 +25,7 @@ impl PciIds {
         &self.vendors
     }
 
-    pub fn classes(&self) -> &Vec<DeviceClass> {
+    pub fn classes(&self) -> &Vec<Class> {
         &self.classes
     }
 
@@ -49,15 +53,15 @@ impl PciIds {
         todo!()
     }
 
-    pub fn get_class(_: &str) -> Result<DeviceClass, io::Error> {
+    pub fn get_class(_: &str) -> Result<Class, io::Error> {
         todo!()
     }
 
-    pub fn get_subclass(_: &str) -> Result<SubDeviceClass, io::Error> {
+    pub fn get_subclass(_: &str) -> Result<SubClass, io::Error> {
         todo!()
     }
 
-    pub fn get_programming_interface(_: &str) -> Result<ProgrammingInterface, io::Error> {
+    pub fn get_programming_interface(_: &str) -> Result<Interface, io::Error> {
         todo!()
     }
 
@@ -71,8 +75,8 @@ impl PciIds {
         let mut in_class_section = false;
         let mut vendor: Vendor;
         let mut device: Device;
-        let mut class: DeviceClass;
-        let mut subclass: SubDeviceClass;
+        let mut class: Class;
+        let mut subclass: SubClass;
 
         let mut devices = Vec::new();
         let mut subdevices = Vec::new();
@@ -137,7 +141,7 @@ impl PciIds {
                 if let Some(c) = self.classes.last_mut() {
                     c.set_subclasses(subclasses);
                 }
-                class = DeviceClass::new(id, name.to_owned());
+                class = Class::new(id);
                 self.classes.push(class);
                 subclasses = Vec::new();
 
@@ -149,13 +153,13 @@ impl PciIds {
                     if let Some(s) = subclasses.last_mut() {
                         s.set_interfaces(interfaces);
                     }
-                    subclass = SubDeviceClass::new(id, name.to_owned());
+                    subclass = SubClass::new(id, name.to_owned());
                     subclasses.push(subclass);
                     interfaces = Vec::new();
                 }
                 // Two tabs
                 else {
-                    let interface = ProgrammingInterface::new(id, name.to_owned());
+                    let interface = Interface::new(id, name.to_owned());
                     interfaces.push(interface);
                 }
             }
@@ -286,46 +290,40 @@ impl SubDevice {
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
-pub struct DeviceClass {
-    id: u8,
-    name: String,
-    subclasses: Vec<SubDeviceClass>,
+pub struct Class {
+    class: DeviceClass,
+    subclasses: Vec<SubClass>,
 }
 
-impl DeviceClass {
-    pub fn new(id: u8, name: String) -> Self {
+impl Class {
+    pub fn new(id: u8) -> Self {
         Self {
-            id,
-            name,
+            class: DeviceClass::try_from(id).unwrap(),
             subclasses: Vec::new(),
         }
     }
 
-    pub fn id(&self) -> u8 {
-        self.id
+    pub fn class(&self) -> DeviceClass {
+        self.class
     }
 
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
-    pub fn subclasses(&self) -> &Vec<SubDeviceClass> {
+    pub fn subclasses(&self) -> &Vec<SubClass> {
         &self.subclasses
     }
 
-    fn set_subclasses(&mut self, subclasses: Vec<SubDeviceClass>) {
+    fn set_subclasses(&mut self, subclasses: Vec<SubClass>) {
         self.subclasses = subclasses;
     }
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
-pub struct SubDeviceClass {
+pub struct SubClass {
     id: u8,
     name: String,
-    interfaces: Vec<ProgrammingInterface>,
+    interfaces: Vec<Interface>,
 }
 
-impl SubDeviceClass {
+impl SubClass {
     pub fn new(id: u8, name: String) -> Self {
         Self {
             id,
@@ -342,22 +340,22 @@ impl SubDeviceClass {
         &self.name
     }
 
-    pub fn interfaces(&self) -> &Vec<ProgrammingInterface> {
+    pub fn interfaces(&self) -> &Vec<Interface> {
         &self.interfaces
     }
 
-    fn set_interfaces(&mut self, interfaces: Vec<ProgrammingInterface>) {
+    fn set_interfaces(&mut self, interfaces: Vec<Interface>) {
         self.interfaces = interfaces;
     }
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
-pub struct ProgrammingInterface {
+pub struct Interface {
     id: u8,
     name: String,
 }
 
-impl ProgrammingInterface {
+impl Interface {
     pub fn new(id: u8, name: String) -> Self {
         Self { id, name }
     }
@@ -412,8 +410,8 @@ mod tests {
             .parse_classes(Path::new(DEFAULT_PATH_TO_PCI_IDS))
             .unwrap();
         let res = pci_ids.classes().iter().find(|&c| {
-            c.id == 0x0c
-                && c.name == "Serial bus controller"
+            u8::from(c.class) == 0x0c
+                && c.class.to_string() == "Serial Bus Controller"
                 && c.subclasses
                     .iter()
                     .find(|&s| {
@@ -426,6 +424,7 @@ mod tests {
                     })
                     .is_some()
         });
+        println!("{:?}", res);
         assert!(res.is_some());
     }
 }
