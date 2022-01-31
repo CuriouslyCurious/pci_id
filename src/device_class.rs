@@ -59,7 +59,7 @@ impl TryFrom<u8> for DeviceClass {
             0x13 => Ok(Self::NonEssentialInstrumentation),
             0x40 => Ok(Self::Coprocessor),
             0xff => Ok(Self::Unassigned),
-            _ => Err("Invalid DeviceClass byte")
+            _ => Err("Invalid DeviceClass byte"),
         }
     }
 }
@@ -67,28 +67,28 @@ impl TryFrom<u8> for DeviceClass {
 impl From<DeviceClass> for u8 {
     fn from(class: DeviceClass) -> u8 {
         match class {
-            DeviceClass::Unclassified                     => 0x00,
-            DeviceClass::MassStorageController            => 0x01,
-            DeviceClass::NetworkController                => 0x02,
-            DeviceClass::DisplayController                => 0x03,
-            DeviceClass::MultimediaController             => 0x04,
-            DeviceClass::MemoryController                 => 0x05,
-            DeviceClass::Bridge                           => 0x06,
-            DeviceClass::CommunicationController          => 0x07,
-            DeviceClass::GenericSystemPeripheral          => 0x08,
-            DeviceClass::InputDeviceController            => 0x09,
-            DeviceClass::DockingStation                   => 0x0a,
-            DeviceClass::Processor                        => 0x0b,
-            DeviceClass::SerialBusController              => 0x0c,
-            DeviceClass::WirelessController               => 0x0d,
-            DeviceClass::IntelligentController            => 0x0e,
-            DeviceClass::SatelliteCommunicationsController=> 0x0f,
-            DeviceClass::EncryptionController             => 0x10,
-            DeviceClass::SignalProcessingController       => 0x11,
-            DeviceClass::ProcessingAccelerator            => 0x12,
-            DeviceClass::NonEssentialInstrumentation      => 0x13,
-            DeviceClass::Coprocessor                      => 0x40,
-            DeviceClass::Unassigned                       => 0xff,
+            DeviceClass::Unclassified => 0x00,
+            DeviceClass::MassStorageController => 0x01,
+            DeviceClass::NetworkController => 0x02,
+            DeviceClass::DisplayController => 0x03,
+            DeviceClass::MultimediaController => 0x04,
+            DeviceClass::MemoryController => 0x05,
+            DeviceClass::Bridge => 0x06,
+            DeviceClass::CommunicationController => 0x07,
+            DeviceClass::GenericSystemPeripheral => 0x08,
+            DeviceClass::InputDeviceController => 0x09,
+            DeviceClass::DockingStation => 0x0a,
+            DeviceClass::Processor => 0x0b,
+            DeviceClass::SerialBusController => 0x0c,
+            DeviceClass::WirelessController => 0x0d,
+            DeviceClass::IntelligentController => 0x0e,
+            DeviceClass::SatelliteCommunicationsController => 0x0f,
+            DeviceClass::EncryptionController => 0x10,
+            DeviceClass::SignalProcessingController => 0x11,
+            DeviceClass::ProcessingAccelerator => 0x12,
+            DeviceClass::NonEssentialInstrumentation => 0x13,
+            DeviceClass::Coprocessor => 0x40,
+            DeviceClass::Unassigned => 0xff,
         }
     }
 }

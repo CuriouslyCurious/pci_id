@@ -1,11 +1,11 @@
+mod device_class;
+
 use std::num::ParseIntError;
 use std::{io, path::Path};
 
 use crate::device_class::DeviceClass;
 
 pub const DEFAULT_PATH_TO_PCI_IDS: &str = "/usr/share/hwdata/pci.ids";
-
-mod device_class;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct PciIds {
@@ -39,30 +39,6 @@ impl PciIds {
         let data = std::fs::read_to_string(path)?;
         self.parse_lines(data, true, false).unwrap();
         Ok(())
-    }
-
-    pub fn get_vendor(_: &str) -> Result<Vendor, io::Error> {
-        todo!()
-    }
-
-    pub fn get_device(_: &str) -> Result<Device, io::Error> {
-        todo!()
-    }
-
-    pub fn get_subdevice(_: &str) -> Result<SubDevice, io::Error> {
-        todo!()
-    }
-
-    pub fn get_class(_: &str) -> Result<Class, io::Error> {
-        todo!()
-    }
-
-    pub fn get_subclass(_: &str) -> Result<SubClass, io::Error> {
-        todo!()
-    }
-
-    pub fn get_programming_interface(_: &str) -> Result<Interface, io::Error> {
-        todo!()
     }
 
     #[inline(always)]
