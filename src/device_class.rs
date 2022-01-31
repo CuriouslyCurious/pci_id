@@ -7,28 +7,50 @@ use std::fmt;
 // TODO: Make the subdevice classes and programming interfaces into their own enums
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum DeviceClass {
-    Unclassified,                      // ID: 00
-    MassStorageController,             // ID: 01
-    NetworkController,                 // ID: 02
-    DisplayController,                 // ID: 03
-    MultimediaController,              // ID: 04
-    MemoryController,                  // ID: 05
-    Bridge,                            // ID: 06
-    CommunicationController,           // ID: 07
-    GenericSystemPeripheral,           // ID: 08
-    InputDeviceController,             // ID: 09
-    DockingStation,                    // ID: 0a
-    Processor,                         // ID: 0b
-    SerialBusController,               // ID: 0c
-    WirelessController,                // ID: 0d
-    IntelligentController,             // ID: 0e
-    SatelliteCommunicationsController, // ID: 0f
-    EncryptionController,              // ID: 10
-    SignalProcessingController,        // ID: 11
-    ProcessingAccelerator,             // ID: 12
-    NonEssentialInstrumentation,       // ID: 13
-    Coprocessor,                       // ID: 40
-    Unassigned,                        // ID: ff
+    /// 0x00
+    Unclassified,
+    /// 0x01
+    MassStorageController,
+    /// 0x02
+    NetworkController,
+    /// 0x03
+    DisplayController,
+    /// 0x04
+    MultimediaController,
+    /// 0x05
+    MemoryController,
+    /// 0x06
+    Bridge,
+    /// 0x07
+    CommunicationController,
+    /// 0x08
+    GenericSystemPeripheral,
+    /// 0x09
+    InputDeviceController,
+    /// 0x0a
+    DockingStation,
+    /// 0x0b
+    Processor,
+    /// 0x0c
+    SerialBusController,
+    /// 0x0d
+    WirelessController,
+    /// 0x0e
+    IntelligentController,
+    /// 0x0f
+    SatelliteCommunicationsController,
+    /// 0x10
+    EncryptionController,
+    /// 0x11
+    SignalProcessingController,
+    /// 0x12
+    ProcessingAccelerator,
+    /// 0x13
+    NonEssentialInstrumentation,
+    /// 0x40
+    Coprocessor,
+    /// 0xff
+    Unassigned,
 }
 
 impl TryFrom<u8> for DeviceClass {
