@@ -1,13 +1,12 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use pci_id::{PciIds, DEFAULT_PATH_TO_PCI_IDS};
+use pci_id::{PciIds, PATH_TO_PCI_IDS};
 use std::path::Path;
 
 pub fn bench_parse_all(c: &mut Criterion) {
     c.bench_function("parse all", |b| {
         b.iter(|| {
-            let mut pci_ids = PciIds::new();
-            pci_ids
-                .parse_pci_id_list(Path::new(DEFAULT_PATH_TO_PCI_IDS))
+            let _ = PciIds::new();
+            PciIds::parse_pci_id_list(Path::new(PATH_TO_PCI_IDS))
                 .unwrap();
         })
     });
@@ -18,7 +17,7 @@ pub fn bench_parse_vendors(c: &mut Criterion) {
         b.iter(|| {
             let mut pci_ids = PciIds::new();
             pci_ids
-                .parse_vendors(Path::new(DEFAULT_PATH_TO_PCI_IDS))
+                .parse_vendors(Path::new(PATH_TO_PCI_IDS))
                 .unwrap();
         })
     });
@@ -29,7 +28,7 @@ pub fn bench_parse_classes(c: &mut Criterion) {
         b.iter(|| {
             let mut pci_ids = PciIds::new();
             pci_ids
-                .parse_classes(Path::new(DEFAULT_PATH_TO_PCI_IDS))
+                .parse_classes(Path::new(PATH_TO_PCI_IDS))
                 .unwrap();
         })
     });

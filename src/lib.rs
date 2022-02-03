@@ -1,6 +1,6 @@
 //! ```
 //! use std::path::Path;
-//! use pci_id::{PciIds, DEFAULT_PATH_TO_PCI_IDS, Device};
+//! use pci_id::{PciIds, PATH_TO_PCI_IDS, Device};
 //!
 //! let pci_ids = PciIds::parse_pci_id_list(Path::new(DEFAULT_PATH_TO_PCI_IDS)).unwrap();
 //! let amd_devices = pci_ids.vendors().iter().find(|v| v.name() == "Advanced Micro Devices, Inc. [AMD/ATI]").unwrap();
@@ -25,7 +25,7 @@ use crate::device_class::DeviceClass;
 ///
 /// # Note
 /// If this differs from your system you can supply your own path to the functions that require one.
-pub const DEFAULT_PATH_TO_PCI_IDS: &str = "/usr/share/hwdata/pci.ids";
+pub const PATH_TO_PCI_IDS: &str = "/usr/share/hwdata/pci.ids";
 
 /// Wrapper struct around the list of PCI vendors and classes that exist in the pci.ids file.
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -447,14 +447,14 @@ impl Interface {
 
 #[cfg(test)]
 mod tests {
-    use crate::{PciIds, DEFAULT_PATH_TO_PCI_IDS};
+    use crate::{PciIds, PATH_TO_PCI_IDS};
     use std::path::Path;
     /// Test the vendors part of the parsed result by picking an example and checking if it is ok
     #[test]
     fn test_vendors_list() {
         let mut pci_ids = PciIds::new();
         pci_ids
-            .parse_vendors(Path::new(DEFAULT_PATH_TO_PCI_IDS))
+            .parse_vendors(Path::new(PATH_TO_PCI_IDS))
             .unwrap();
         let res = pci_ids.vendors().iter().find(|&v| {
             v.id == 0x0e11
@@ -483,7 +483,7 @@ mod tests {
     fn test_classes_list() {
         let mut pci_ids = PciIds::new();
         pci_ids
-            .parse_classes(Path::new(DEFAULT_PATH_TO_PCI_IDS))
+            .parse_classes(Path::new(PATH_TO_PCI_IDS))
             .unwrap();
         let res = pci_ids.classes().iter().find(|&c| {
             u8::from(c.class) == 0x0c
