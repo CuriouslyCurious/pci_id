@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use pci_id::{PciIds, PATH_TO_PCI_IDS};
+use pci_id::pci_ids::{PciIds, PATH_TO_PCI_IDS};
 use std::path::Path;
 
 pub fn bench_parse_all(c: &mut Criterion) {
