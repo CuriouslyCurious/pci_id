@@ -1,3 +1,10 @@
+//! A PCI device can belong to a [DeviceClass] and its subsequent [SubClass]es and programming [Interface]s.
+//!
+//! # Example
+//! ```
+//!
+//! ```
+
 use crate::device_class::DeviceClass;
 
 /// A category/class that a PCI device can belong to, along with eventual subclasses for more

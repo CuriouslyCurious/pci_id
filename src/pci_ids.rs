@@ -1,9 +1,20 @@
+//! Main wrapper around all the vendors and classes that exist in the pci.ids file.
+//!
+//! This wrapper struct contains lists of the vendors and classes once they are read in
+//! as well as the methods parsing for the pci.ids file.
+//!
+//! # Example
+//! ```
+//!
+//! ```
+
+// TODO: Replace manual parsing with either `nom` or `pest` if performance is better.
+
 use std::num::ParseIntError;
 use std::{io, path::Path};
 
 use crate::class::{Class, SubClass, Interface};
 use crate::vendor::{Vendor, Device, SubDevice};
-
 
 /// Default path for the pci.ids file.
 ///

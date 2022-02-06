@@ -1,3 +1,11 @@
+//! A vendor in the pci.ids file can contain a bunch of devices who in turn can have its own subdevices
+//! made.
+//!
+//! # Example
+//! ```
+//!
+//! ```
+
 /// A hardware vendor.
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Vendor {
@@ -39,6 +47,11 @@ impl Vendor {
 }
 
 /// A PCI device.
+///
+/// # Example
+/// ```
+///
+/// ```
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Device {
     id: u16,
