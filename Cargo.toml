@@ -11,7 +11,7 @@ edition = "2021"
 criterion = "0.3.5"
 
 [[bench]]
-name = "bench"
+name = "bench_main"
 harness = false
 
 # Incremental builds for faster build speeds once everything is compiled at least once
